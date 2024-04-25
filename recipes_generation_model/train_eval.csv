@@ -1,0 +1,3 @@
+,epoch,training loss,validation loss,train perplexity,validation perplexity
+0,,0.93,1.15,2.53,3.17
+1,,0.48,0.45,1.61,1.57

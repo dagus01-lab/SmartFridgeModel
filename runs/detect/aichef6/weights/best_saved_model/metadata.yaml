@@ -1,0 +1,58 @@
+description: Ultralytics best model trained on detector/data/data.yaml
+author: Ultralytics
+date: '2024-04-24T01:07:44.161300'
+version: 8.1.47
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: apples
+  1: aubergine
+  2: avocado
+  3: bacon
+  4: banana
+  5: beans
+  6: beef
+  7: blueberries
+  8: bread
+  9: butter
+  10: carrots
+  11: cherry_tomato
+  12: chicken
+  13: chicken_breast
+  14: chickpeas
+  15: chocolate
+  16: corn
+  17: courgettes
+  18: eggs
+  19: flour
+  20: goat_cheese
+  21: green_beans
+  22: ground_beef
+  23: ham
+  24: heavy_cream
+  25: lime
+  26: mid_seasoned_cheese
+  27: milk
+  28: mushrooms
+  29: oats
+  30: oil
+  31: olives
+  32: onions
+  33: orange
+  34: parmesan_cheese
+  35: potatoes
+  36: shrimp
+  37: spinach
+  38: strawberries
+  39: sugar
+  40: sweet_potatoes
+  41: tomato
+  42: tomato_sauce
+  43: tuna_fish
+  44: yoghurt
