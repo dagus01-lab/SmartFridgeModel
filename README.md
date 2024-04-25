@@ -1,4 +1,4 @@
-# AI Chef Model
+# Smart Fridge Model
 
 ## Overview
 This repository contains the programs used to train the machine 
