@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Virtual environment
+venv/
+
+# IDEs and editors
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.idea/
+*.iml
+*.pyc
+*.pyo
+
+#models
+*.safetensors
+*.pt
+*.tflite
+
+#datasets
+train/
+valid/
+test/
+recipes*.csv
+recipes*.json
+
+
+# Miscellaneous
+*.log
+*.bak
+*.swp
+*~
+*.DS_Store
