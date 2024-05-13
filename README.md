@@ -97,8 +97,6 @@ recipes with a maximum of 700 tokens.
 Initially, we experimented with training the full GPT model and then 
 applying knowledge distillation to DistilGPT-2. However, superior results 
 were achieved by directly training DistilGPT-2 on the dataset. 
-The model was ultimately exported in .tflite format, employing 
-float16 quantization to further reduce its size.
 
 ## Usage
 
@@ -112,3 +110,6 @@ the code of the detector in the detector directory and the code of the
 recipe generator in the recipe generation directory
 5. Follow the instructions provided in the notebooks to run the code, 
 preprocess the data, train the models, and evaluate their performance.
+6. Run the recipes generation server:
+`python ./recipes_generation/recipes_generator_server.py`
+7. Run the android application

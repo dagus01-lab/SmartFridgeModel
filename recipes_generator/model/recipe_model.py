@@ -8,6 +8,24 @@ import math
 from transformers import AdamW, get_linear_schedule_with_warmup
 KD_loss = nn.KLDivLoss(reduction='batchmean')
 
+def infer(prompt, model, tokenizer, device):
+    input = f"<|startoftext|>Prompt: {prompt.strip()}"
+    input = tokenizer(input, return_tensors="pt")
+    input_ids = input["input_ids"]
+    attention_mask = input["attention_mask"]
+
+    output = model.generate(input_ids.to(device),
+                            attention_mask=attention_mask.to(device),
+                            max_new_tokens=768,
+                            num_beams=5,
+                            no_repeat_ngram_size=2,
+                            max_length = 768,
+                            num_return_sequences=1,
+                            eos_token_id=tokenizer.eos_token_id,
+                            do_sample = True, top_k = 100, top_p = 0.85)
+    output = tokenizer.decode(output[0], skip_special_tokens=True)
+    return output
+
 def train_distilled(teacher, student, train_dataset, val_dataset,
                 epochs, batch_size, device,
                 sample_every=1000, save_every=5000, save_file='model',
