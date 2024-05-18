@@ -1,6 +1,6 @@
 base_container_path: dataset/synthetic_dataset/containers/
 base_products_path: dataset/synthetic_dataset/products/
-perc: 2 #ratio of synthetic images vs authentic images in the dataset
+perc: 2 #ratio of synthetic images over authentic images in the dataset
 synthetic_dataset_path: dataset/synthetic_dataset/
 original_dataset_path: dataset/original_dataset/
 original_classes_path: data.yaml

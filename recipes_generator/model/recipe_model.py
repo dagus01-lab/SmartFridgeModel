@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from torch import nn
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
@@ -8,7 +9,7 @@ import math
 from transformers import AdamW, get_linear_schedule_with_warmup
 KD_loss = nn.KLDivLoss(reduction='batchmean')
 
-def infer(prompt, model, tokenizer, device):
+def generate_recipe(prompt, model, tokenizer, device):
     input = f"<|startoftext|>Prompt: {prompt.strip()}"
     input = tokenizer(input, return_tensors="pt")
     input_ids = input["input_ids"]
@@ -18,7 +19,6 @@ def infer(prompt, model, tokenizer, device):
                             attention_mask=attention_mask.to(device),
                             max_new_tokens=768,
                             num_beams=5,
-                            no_repeat_ngram_size=2,
                             max_length = 768,
                             num_return_sequences=1,
                             eos_token_id=tokenizer.eos_token_id,
@@ -240,7 +240,33 @@ def train_model(model, train_dataset, val_dataset,
         # ========================================
         #               Training
         # ========================================
+        """
+        if epoch_i==0:
+            print("======== Epoch 1 / 2 ========\n"\
+"Training...\n"\
 
+"Batch: 54088, Loss: 0.5402792096138: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 54089/54089 [9:47:50<00:00,  1.53it/s]"\
+
+
+"  Average training loss: 0.55\n"\
+"  Perplexity: 1.73\n"\
+
+"Running Validation...\n"\
+
+"Validation Loss: 0.4237533509731293: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 6010/6010 [21:49<00:00,  4.59it/s]"\
+
+"  Validation Loss: 0.48\n"\
+"  Validation perplexity: 1.61\n")
+            training_stats.append(
+                {
+                    'epoch': epoch_i + 1,
+                    'Training Loss': 0.55,
+                    'Valid. Loss': 0.48,
+                    'Training Perplexity': np.exp(0.55).item(),
+                    'Valid. Perplexity': np.exp(0.48).item(),
+                }
+            )
+            continue"""
         print("")
         print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
         print('Training...')
@@ -250,40 +276,44 @@ def train_model(model, train_dataset, val_dataset,
         total_train_loss = 0
 
         model.train()
+        with tqdm(total=len(train_dataloader)) as pbar:
+            for step, batch in enumerate(train_dataloader):
 
-        for step, batch in enumerate(train_dataloader):
+                b_input_ids = batch[0].to(device)
+                b_labels = batch[0].to(device)
+                b_masks = batch[1].to(device)
 
-            b_input_ids = batch[0].to(device)
-            b_labels = batch[0].to(device)
-            b_masks = batch[1].to(device)
+                model.zero_grad()
 
-            model.zero_grad()
+                outputs = model(b_input_ids,
+                                labels=b_labels,
+                                attention_mask=b_masks,
+                                token_type_ids=None
+                                )
 
-            outputs = model(b_input_ids,
-                            labels=b_labels,
-                            attention_mask=b_masks,
-                            token_type_ids=None
-                            )
+                loss = outputs[0]
+                ##call the method above and add student&teacher model
 
-            loss = outputs[0]
-            ##call the method above and add student&teacher model
+                batch_loss = loss.item()
+                total_train_loss += batch_loss
+                losses.append(batch_loss)
 
-            batch_loss = loss.item()
-            total_train_loss += batch_loss
-            losses.append(batch_loss)
+                """
+                # Get sample every x batches.
+                if step % sample_every == 0 and not step == 0:
+                    print('Batch {:>5,}  of  {:>5,}. Loss: {:>5,}.'.format(step, len(train_dataloader), batch_loss))"""
 
-            # Get sample every x batches.
-            if step % sample_every == 0 and not step == 0:
-                print('Batch {:>5,}  of  {:>5,}. Loss: {:>5,}.'.format(step, len(train_dataloader), batch_loss))
+                loss.backward()
 
-            loss.backward()
+                optimizer.step()
 
-            optimizer.step()
+                scheduler.step()
 
-            scheduler.step()
+                if step % save_every == 0:
+                    model.save_pretrained(save_file)
 
-            if step % save_every == 0:
-                model.save_pretrained(save_file)
+                pbar.set_description(f"Batch: {step}, Loss: {batch_loss}")
+                pbar.update(1)
 
         # Calculate the average loss over all of the batches.
         avg_train_loss = total_train_loss / len(train_dataloader)
@@ -295,6 +325,7 @@ def train_model(model, train_dataset, val_dataset,
         print("")
         print("  Average training loss: {0:.2f}".format(avg_train_loss))
         print("  Perplexity: {0:.2f}".format(train_perplexity))
+        torch.cuda.empty_cache()  # clear GPU memory at the end of the training epoch
         # ========================================
         #               Validation
         # ========================================
@@ -309,22 +340,25 @@ def train_model(model, train_dataset, val_dataset,
         nb_eval_steps = 0
 
         # Evaluate data for one epoch
-        for batch in validation_dataloader:
-            b_input_ids = batch[0].to(device)
-            b_labels = batch[0].to(device)
-            b_masks = batch[1].to(device)
+        with tqdm(total=len(validation_dataloader)) as pbar:
+            for batch in validation_dataloader:
+                b_input_ids = batch[0].to(device)
+                b_labels = batch[0].to(device)
+                b_masks = batch[1].to(device)
 
-            with torch.no_grad():
-                outputs = model(b_input_ids,
-                                #                            token_type_ids=None,
-                                attention_mask=b_masks,
-                                labels=b_labels)
+                with torch.no_grad():
+                    outputs = model(b_input_ids,
+                                    #                            token_type_ids=None,
+                                    attention_mask=b_masks,
+                                    labels=b_labels)
 
-                loss = outputs[0]
+                    loss = outputs[0]
 
-            batch_loss = loss.item()
-            losses.append(batch_loss)
-            total_eval_loss += batch_loss
+                batch_loss = loss.item()
+                losses.append(batch_loss)
+                total_eval_loss += batch_loss
+                pbar.set_description(f"Validation Loss: {batch_loss}")
+                pbar.update(1)
 
         avg_val_loss = total_eval_loss / len(validation_dataloader)
 
@@ -346,6 +380,8 @@ def train_model(model, train_dataset, val_dataset,
             }
         )
 
+        torch.cuda.empty_cache() #clear GPU memory at the end of the epoch
+
     print("")
     print("Training complete!")
     return training_stats
@@ -366,24 +402,27 @@ def evaluate_model(model, test_dataset, batch_size, device):
     nb_eval_steps = 0
 
     # Evaluate data for one epoch
-    for batch in dataloader:
+    with tqdm(total=len(dataloader)) as pbar:
+        for batch in dataloader:
 
-        b_input_ids = batch[0].to(device)
-        b_labels = batch[0].to(device)
-        b_masks = batch[1].to(device)
+            b_input_ids = batch[0].to(device)
+            b_labels = batch[0].to(device)
+            b_masks = batch[1].to(device)
 
-        with torch.no_grad():
+            with torch.no_grad():
 
-            outputs = model(b_input_ids,
-    #                       token_type_ids=None,
-                            attention_mask = b_masks,
-                            labels=b_labels)
+                outputs = model(b_input_ids,
+        #                       token_type_ids=None,
+                                attention_mask = b_masks,
+                                labels=b_labels)
 
-            loss = outputs[0]
+                loss = outputs[0]
 
-        batch_loss = loss.item()
-        losses.append(batch_loss)
-        total_eval_loss += batch_loss
+            batch_loss = loss.item()
+            losses.append(batch_loss)
+            total_eval_loss += batch_loss
+            pbar.set_description(f"Validation Loss: {batch_loss}")
+            pbar.update(1)
 
     avg_val_loss = total_eval_loss / len(dataloader)
 
@@ -396,17 +435,3 @@ def evaluate_model(model, test_dataset, batch_size, device):
     print("  Validation perplexity: {0:.2f}".format(val_perplexity))
     return avg_val_loss, val_perplexity
 
-
-def generate_recipe(model, tokenizer, ingredients, max_length=100, num_return_sequences=1):
-    # Tokenize and encode the ingredients
-    input_text = "Ingredients: " + ", ".join(ingredients) + "\nRecipe: [RECIPETEXT]"
-    input_ids = tokenizer.encode(input_text, return_tensors='pt')
-
-    # Generate recipe text
-    with torch.no_grad():
-        output_ids = model.generate(input_ids, max_length=max_length, num_return_sequences=num_return_sequences, temperature=0.7)
-
-    # Decode the generated recipe text
-    recipes = [tokenizer.decode(ids, skip_special_tokens=True) for ids in output_ids]
-
-    return recipes

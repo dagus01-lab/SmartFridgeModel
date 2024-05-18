@@ -1,6 +1,6 @@
-train: ../dataset/train/images
-val: ../dataset/valid/images
-test: ../dataset/test/images
+train: ../dataset/original_dataset/train/images
+val: ../dataset/original_dataset/valid/images
+test: ../dataset/original_dataset/test/images
 
 nc: 45
 names: ['apples', 'aubergine', 'avocado', 'bacon', 'banana', 'beans', 'beef', 'blueberries', 'bread', 'butter', 'carrots', 'cherry_tomato', 'chicken', 'chicken_breast', 'chickpeas', 'chocolate', 'corn', 'courgettes', 'eggs', 'flour', 'goat_cheese', 'green_beans', 'ground_beef', 'ham', 'heavy_cream', 'lime', 'mid_seasoned_cheese', 'milk', 'mushrooms', 'oats', 'oil', 'olives', 'onions', 'orange', 'parmesan_cheese', 'potatoes', 'shrimp', 'spinach', 'strawberries', 'sugar', 'sweet_potatoes', 'tomato', 'tomato_sauce', 'tuna_fish', 'yoghurt']

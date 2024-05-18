@@ -1,6 +1,8 @@
+import argparse
 import csv
 import glob
 import math
+import sys
 import time
 
 import cv2
@@ -13,9 +15,8 @@ import numpy as np
 from PIL import Image, ImageFilter, ImageDraw
 import os
 from tqdm import tqdm
-from detector.utils.ops import xyxy2xywh, xywh2xyxy
-MAX_PRODUCTS = 40
-MAX_PRODUCTS_PER_TRAY = 15
+MAX_PRODUCTS = 50
+MAX_PRODUCTS_PER_TRAY = 20
 MIN_PROD_HEIGHT = 50
 MIN_PROD_WIDTH = 50
 MAX_PROD_HEIGHT = 150
@@ -27,7 +28,8 @@ class IllegalBboxException(Exception):
         super().__init__(self.message)
 
 
-def not_overlaps(bbox, bboxes, overlap_degree:float=.8):
+def not_overlaps(bbox, bboxes, overlap_degree:float=.8) -> bool:
+    """Verifies that the found bounding box does not overlap the bounding boxes of other ingredients in the image"""
     for b in bboxes:
         x_min1 = bbox[0]
         x_max1 = bbox[1]
@@ -87,7 +89,10 @@ def not_overlaps(bbox, bboxes, overlap_degree:float=.8):
         if area2 * overlap_degree < overlapping_area:
             return False
     return True
-def find_product_bbox(image):
+
+
+def find_product_bbox(image:Image) -> tuple[int, int, int, int]:
+    """Gets the bounding box of the ingredient from the passed image"""
     # Convert the image to numpy array
     image_array = np.array(image)
 
@@ -104,7 +109,12 @@ def find_product_bbox(image):
     return min_x, max_x, min_y, max_y
 
 
-def remove_background(image_path):
+def remove_background(image_path: str | Path) -> tuple[Image, tuple:int]:
+    """
+    This function is aimed at adding to the alpha channel of the ingredient image
+    :param image_path: path to ingredient image
+    :return: the modified image and the bounding boxes coordinates in the xywh format
+    """
     # Open the image
     image = Image.open(image_path)
 
@@ -132,7 +142,18 @@ def remove_background(image_path):
     return image, min_x, max_x, min_y, max_y
 
 
-def paste_ingredient(initial_image: Image, ingredient_image_path: str | Path, valid_range: tuple, bboxes: list[np.array], attached_to_bottom=True) -> Image:
+def paste_ingredient(initial_image: Image, ingredient_image_path: str | Path, valid_range: tuple, bboxes: list[tuple[float]], attached_to_bottom=True) -> Image:
+    """
+    This function pastes an ingredient to a container image. It makes the ingredient image background invisible by
+    pasting the ingredient image to the container image
+    :param initial_image: initial image
+    :param ingredient_image_path: path to ingredient image to paste
+    :param valid_range: range of valid position where the ingredient can be pasted
+    :param bboxes: list of bounding boxes
+    :param attached_to_bottom: if true, the ingredient will be pasted directly on the vertical lowest point, otherwise it will be pasted in a random vertical position
+    in the valid range
+    :return: the initial image with the pasted intgredient
+    """
     # Remove background from the ingredient image using edge detection
     l, r = valid_range[0]
     u, d = valid_range[1]
@@ -165,7 +186,14 @@ def paste_ingredient(initial_image: Image, ingredient_image_path: str | Path, va
 
     return initial_image, min_x+x, max_x+x, min_y+y, max_y+y
 
-def read_dimensions(file_path):
+
+def read_dimensions(file_path: str | Path) -> list[int]:
+    """
+    This function reads the legal dimensions range in container images for pasting ingredients.
+    The following format is used: [trays_number, min_x, min_y, max_x, max_y]
+    :param file_path: dimensions file
+    :return: legal dimensions in a list
+    """
     numbers = []
     with open(file_path, 'r') as file:
         reader = csv.reader(file)
@@ -177,6 +205,14 @@ def read_dimensions(file_path):
 
 
 def generate_synthetic_image(base_containers_path: str | Path, base_ingredients_path: str | Path, draw_bboxes= False) -> Image:
+    """
+    This function generates a synthetic image, by taking some random ingredients from the available ones and
+    pasting them to a container image
+    :param base_containers_path: directory of containers images
+    :param base_ingredients_path: directory of ingredients images
+    :param draw_bboxes: if true saves the image with bboxes. Default value is False
+    :return: a synthetic image
+    """
     ingredients = os.listdir(base_ingredients_path)
     labels = []
     bboxes = []
@@ -239,13 +275,25 @@ def generate_synthetic_image(base_containers_path: str | Path, base_ingredients_
     return container_img, labels, bboxes
 
 
-def save_labels(labels, bboxes, labels_file_path):
+def save_labels(labels: list[str], bboxes: list[list[float] | tuple[float]], labels_file_path: str | Path) -> None:
+    """
+    This function saves the labels of an image to the specified location
+    :param labels: list of labels in the image
+    :param bboxes: list of bounding boxes
+    :param labels_file_path: labels file directory
+    """
     with open(labels_file_path, 'w') as file:
         for i in range(len(bboxes)):
             file.write(f"{labels[i]} {bboxes[i][0]} {bboxes[i][1]} {bboxes[i][2]} {bboxes[i][3]}\n")
 
 
-def save_config_file(synthetic_dataset_path, classes, file_path):
+def save_config_file(synthetic_dataset_path: str | Path, classes: list[str], file_path: str | Path) -> None:
+    """
+    This function saves the synthetic dataset configuration
+    :param synthetic_dataset_path: path to synthetic dataset
+    :param classes: list of classes names
+    :param file_path: path to synthetic dataset configuration file
+    """
     data= {
         "train": synthetic_dataset_path+"train/images",
         "test": synthetic_dataset_path+"test/images",
@@ -257,20 +305,45 @@ def save_config_file(synthetic_dataset_path, classes, file_path):
         yaml.dump(data, file, default_flow_style=False, default_style="'")
 
 if __name__ == "__main__":
-    with open("synthetic_dataset.yaml", 'r') as file:
-        synthetic_data = yaml.safe_load(file)
-        base_containers_path = synthetic_data["base_container_path"]
-        base_ingredients_path = synthetic_data["base_products_path"]
-        perc = synthetic_data["perc"]
-        synthetic_dataset_path = synthetic_data["synthetic_dataset_path"]
-        original_dataset_path = synthetic_data["original_dataset_path"]
-        original_classes_path = synthetic_data["original_classes_path"]
+    """
+        This script is aimed at creating a synthetic dataset by pasting some products images
+        to images that represent usual containers in the kitchen (eg: tables, refrigerators, 
+        pantries, etc).
+        When invoking the script users should pass the configuration file as a parameter.
+        The configuration file should contain:
+        - base_container_path: path to the containers images
+        - base_products_path: path to the ingredients images
+        - perc: ratio of synthetic images over authentic images in the dataset
+        - synthetic_dataset_path: path to synthetic dataset
+        - original_dataset_path: path to original dataset
+        - original_classes_path: original dataset configuration file
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--config_file", type=str)
 
-    with open(original_classes_path, 'r') as file:
-        data = yaml.safe_load(file)
-        classes = data['names']
-        for ingre in os.listdir(base_ingredients_path):
-            classes.append(ingre)
+    args = parser.parse_args()
+    config_file = args.config_file
+    try:
+        with open(config_file, 'r') as file:
+            synthetic_data = yaml.safe_load(file)
+            base_containers_path = synthetic_data["base_container_path"]
+            base_ingredients_path = synthetic_data["base_products_path"]
+            perc = synthetic_data["perc"]
+            synthetic_dataset_path = synthetic_data["synthetic_dataset_path"]
+            original_dataset_path = synthetic_data["original_dataset_path"]
+            original_classes_path = synthetic_data["original_classes_path"]
+    except OSError as e:
+        print(f"Configuration file {config_file} not found")
+        sys.exit(1)
+    try:
+        with open(original_classes_path, 'r') as file:
+            data = yaml.safe_load(file)
+            classes = data['names']
+            for ingre in os.listdir(base_ingredients_path):
+                classes.append(ingre)
+    except OSError as e:
+        print(f"Configuration file {config_file} not found")
+        sys.exit(1)
 
     splits = ["train", "valid", "test"]
     for s in splits:
@@ -307,5 +380,4 @@ if __name__ == "__main__":
 
         progress_bar.close()
 
-    #write a yaml file containing: paths to synthetic dataset parts and classes
     save_config_file(synthetic_dataset_path, classes, "synthetic_data.yaml")

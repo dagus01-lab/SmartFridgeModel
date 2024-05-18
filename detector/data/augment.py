@@ -920,12 +920,13 @@ class Albumentations:
 
 
 class RandomBlackSquares:
-    def __init__(self, probability=0.8, num_squares_range=(1, 15), square_size_range=(10, 30)):
+    def __init__(self, probability=0.8, num_squares_range=(1, 30), square_size_range=(10, 30)):
         self.probability = probability
         self.num_squares_range = num_squares_range
         self.square_size_range = square_size_range
 
     def __call__(self, labels):
+        """Generates an image containing some random black squares that act as noise"""
         img = labels["img"]
         if random.random() < self.probability:
             num_squares = random.randint(*self.num_squares_range)
@@ -945,25 +946,23 @@ class RandomBlackSquares:
 
 
 class RandomNoise(object):
-    def __init__(self, probability=0.8, noise_factor=0.1, dot_probability=0.05):
+    def __init__(self, probability=0.8, noise_factor=0.1, dot_probability=0.05, brightness_factor_min=0.5, brightness_factor_max=1.5):
         self.probability = probability
         self.noise_factor = noise_factor
         self.dot_probability = dot_probability
+        self.brightness_factor_min = brightness_factor_min
+        self.brightness_factor_max = brightness_factor_max
 
     def __call__(self, labels):
+        """Generates some random noise and reduces image brightness"""
         if random.random() < self.probability:
             img = labels["img"]
             width, height = img.shape[:-1]
 
             # Darken the image
+            brightness_factor = random.uniform(self.brightness_factor_min, self.brightness_factor_max)
             img = v2.functional.to_pil_image(img)
-            img = v2.functional.adjust_brightness(img, 0.5)
-
-            # Add random noise
-            #img = v2.functional.to_image(img)
-            #img = img + self.noise_factor * torch.randn(img.size())
-            #img = torch.clamp(img, 0, 1)
-            #img = v2.functional.to_pil_image(img)
+            img = v2.functional.adjust_brightness(img, brightness_factor)
 
             # Add random white dots
             draw = ImageDraw.Draw(img)
