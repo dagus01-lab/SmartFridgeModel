@@ -10,7 +10,7 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 KD_loss = nn.KLDivLoss(reduction='batchmean')
 
 def generate_recipe(prompt, model, tokenizer, device):
-    input = f"<|startoftext|>Prompt: {prompt.strip()}"
+    input = f"<|startoftext|>Prompt: {prompt.strip()}"#\nTitle:" should be added at the end if no other ingredient should be added to the list
     input = tokenizer(input, return_tensors="pt")
     input_ids = input["input_ids"]
     attention_mask = input["attention_mask"]

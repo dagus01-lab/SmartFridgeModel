@@ -22,8 +22,8 @@ def parse_recipe(text):
     # Regular expressions to match each part of the recipe
     regex_patterns = {
         "title": r"Title:\s*(.*)",
-        "ingredients": r"Ingredients:\s*((?:.|\n)*?)\n",
-        "instructions": r"Instructions:\s*((?:.|\n)*?)\n",
+        "ingredients": r"Ingredients:\s*((?:.|\n)*?)(?=\n[A-Z])",
+        "instructions": r"Instructions:\s*((?:.|\n)*?)(?=\n[A-Z])",
         "servings": r"Servings:\s*(\d+|.*)",
         "cooking time": r"Cooking time:\s*(.*)",
         "preparation time": r"Preparation time:\s*(.*)",
