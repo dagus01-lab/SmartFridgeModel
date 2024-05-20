@@ -1,5 +1,7 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 license
-
+# Based on Ultralytics YOLO 🚀, AGPL-3.0 license
+# Modifications from the original file:
+#   - Added random black boxes augmentation
+#   - Added random noise augmentation
 import math
 import random
 from torchvision.transforms import v2
@@ -919,6 +921,7 @@ class Albumentations:
         return labels
 
 
+#Added in this repository
 class RandomBlackSquares:
     def __init__(self, probability=0.8, num_squares_range=(1, 30), square_size_range=(10, 30)):
         self.probability = probability
@@ -945,6 +948,7 @@ class RandomBlackSquares:
         return labels
 
 
+#Added in this repository
 class RandomNoise(object):
     def __init__(self, probability=0.8, noise_factor=0.1, dot_probability=0.05, brightness_factor_min=0.5, brightness_factor_max=1.5):
         self.probability = probability

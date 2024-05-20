@@ -4,10 +4,9 @@ from flask import Flask, request, jsonify
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 import torch
 
-from recipes_generator.model.recipe_model import generate_recipe
+from model.recipe_model import generate_recipe
 app = Flask(__name__)
 
-# Define a function to parse the generated text
 def parse_recipe(text):
     recipe_parts = {
         "title": "",
@@ -52,6 +51,6 @@ def process_data():
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = GPT2LMHeadModel.from_pretrained("../recipes_generator/model/recipes_generation_model", ignore_mismatched_sizes=True).to(device)
-    tokenizer = GPT2TokenizerFast.from_pretrained("../recipes_generator/model/recipes_generation_model")
+    model = GPT2LMHeadModel.from_pretrained("recipes_generator/model/recipes_generation_model", ignore_mismatched_sizes=True).to(device)
+    tokenizer = GPT2TokenizerFast.from_pretrained("recipes_generator/model/recipes_generation_model")
     app.run(debug=False,  host='0.0.0.0', port=8088) #debug=True for debugging mode

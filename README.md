@@ -14,7 +14,7 @@ You can find the repository of the android application
 ## About the project
 
 The primary objective of this project is to reduce food waste by 
-leveraging artificial intelligence to recommend recipes based on 
+leveraging Artificial Intelligence to recommend recipes based on 
 the ingredients available in users' refrigerators or pantries. 
 To achieve this goal, two models have been developed:
 1. A food detection model: This model identifies and categorizes 
@@ -59,7 +59,7 @@ performance was the nano version of YOLOv8. So we used the code from the
 [original repository](https://github.com/ultralytics/ultralytics)
 for training and validation of the detection model, but applied some refactors 
 to it, and added the first two transformations mentioned above in the
-data preprocessing logic, which allowed us to achieve even better model
+data preprocessing logic section, which allowed us to achieve even better model
 performance on new images.
 
 ### FoodDetectorTraining
@@ -83,20 +83,20 @@ number of servings, instructions, and preparation time.
 
 ### RecipesGeneratorModel
 
-The best model for our needs is GPT-2. We imported it using the 
-[huggingface library](https://github.com/huggingface/transformers), 
+After some research, we understood that the best model for our needs is GPT-2. 
+We imported it using the [huggingface library](https://github.com/huggingface/transformers), 
 albeit with a custom training function.
-We opted for the distilled version of GPT-3 to ensure compatibility 
-with Android mobile devices, which possess significant limitations 
-in handling large models.
 
 ### RecipesGeneratorTraining
 The model was trained using the loss function provided by huggingface.
 Due to GPU memory constraints, a batch size of 8 was utilized, generating 
 recipes with a maximum of 700 tokens.
-Initially, we experimented with training the full GPT model and then 
+Initially, we experimented with training the full GPT model (which we had to train
+with a batch size of size 5 due to our GPU memory limitations) and then 
 applying knowledge distillation to DistilGPT-2. However, superior results 
 were achieved by directly training DistilGPT-2 on the dataset. 
+We decided to keep the fine-tuned version of DistilGPT2 in order to speed up 
+inference and training.
 
 ## Usage
 
@@ -111,5 +111,5 @@ recipe generator in the recipe generation directory
 5. Follow the instructions provided in the notebooks to run the code, 
 preprocess the data, train the models, and evaluate their performance.
 6. Run the recipes generation server:
-`python ./recipes_generation/recipes_generator_server.py`
+`python recipes_generation/recipes_generator_server.py`
 7. Run the android application

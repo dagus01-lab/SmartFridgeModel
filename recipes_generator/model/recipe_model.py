@@ -17,9 +17,8 @@ def generate_recipe(prompt, model, tokenizer, device):
 
     output = model.generate(input_ids.to(device),
                             attention_mask=attention_mask.to(device),
-                            max_new_tokens=768,
                             num_beams=5,
-                            max_length = 768,
+                            max_length=768,
                             num_return_sequences=1,
                             eos_token_id=tokenizer.eos_token_id,
                             do_sample = True, top_k = 100, top_p = 0.85)
