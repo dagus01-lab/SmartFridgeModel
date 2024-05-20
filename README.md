@@ -34,6 +34,7 @@ can prepare with the available ingredients.
     - [Model](#RecipesGeneratorModel)
     - [Training](#RecipesGeneratorTraining)
 - [Usage](#Usage)
+- [License](#License)
 
 ## FoodDetector
 
@@ -113,3 +114,9 @@ preprocess the data, train the models, and evaluate their performance.
 6. Run the recipes generation server:
 `python recipes_generation/recipes_generator_server.py`
 7. Run the android application
+
+## License
+
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+For the full license text, please see the [LICENSE](LICENSE) file.
