@@ -53,6 +53,11 @@ Some augmentations were applied to the training input, namely:
 - random horizontal/vertical flip
 - random adjustments to brightness
 
+We also created some synthetic images to the original dataset, by [scraping some local 
+supermarket websites](detector/data/scraping/scraping.py) in order to obtain single 
+ingredients images and to [paste them on some background photos](detector/data/synthetic_data.py) 
+that are commonly found in the kitchen. 
+
 ### FoodDetectorModel
 
 After some attempts we found out that the model that achieved the highest
@@ -117,6 +122,6 @@ preprocess the data, train the models, and evaluate their performance.
 
 ## License
 
-This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+This project is licensed under the [GNU Affero General Public License v2.0](LICENSE).
 
 For the full license text, please see the [LICENSE](LICENSE) file.
